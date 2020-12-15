@@ -63,9 +63,12 @@ parseJLArray m acc size =
 
 parse :: Int -> String -> Either String JsonLikeValue
 parse size m =
-    case parseJLArray m [] 0 of
-    Right (result, restOfText, size1) -> Right result
-    Left (em, size2) -> Left $ L.concat ["Error in position ", show (size2 + 1), ": ", em]
+    if m /= "*"
+    then
+        case parseJLArray m [] 0 of
+        Right (result, restOfText, size1) -> Right result
+        Left (em, size2) -> Left $ L.concat ["Error in position ", show (size2 + 1), ": ", em]
+    else Right (JLArray [])
 
 convert :: Int -> JsonLikeValue -> Either InvalidState To
 convert size (JLArray v) =
@@ -74,6 +77,7 @@ convert size (JLArray v) =
         Left em -> Left em
 
 convert' :: [[JsonLikeValue]] -> [(Int, Int ,Char)] -> Either InvalidState [(Int, Int ,Char)]
+convert' [] [] = Right []
 convert' [] acc = Right acc
 convert' arr acc =
     case extractMove (head arr) of
@@ -84,6 +88,7 @@ extractMove :: [JsonLikeValue] -> Either InvalidState (Int, Int, Char)
 extractMove [JLInt x,JLInt y,JLString v] = Right (x,y,head v)
 
 getMoves :: [JsonLikeValue] -> [[JsonLikeValue]] -> [[JsonLikeValue]]
+getMoves [] [] = []
 getMoves ((JLString "last"):JLArray [JLArray [JLString "data", JLArray m]]:(JLString "prev"):t) acc =
     case head t of
     JLArray a -> getMoves a (m:acc)
@@ -105,6 +110,7 @@ checkForOrder mat =
             else checkForOrder restOfList
 
 convertToLIL :: [(Int, Int, Char)] -> [(Int, Int, Char)] -> [(Int, Char)] -> To-> Int -> Either InvalidState To
+convertToLIL [] [] [] [] size = Right [[],[],[]]
 convertToLIL [] mat tempAcc acc size = 
     if (size - 1) /= -2
     then convertToLIL mat mat [] (sort tempAcc:acc) (size - 1)
