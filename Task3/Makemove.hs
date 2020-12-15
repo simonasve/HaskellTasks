@@ -21,4 +21,5 @@ makeMoveLogic m = case checkIfWon(getMoveList m) of
                   True -> "won"
                   False -> case (getMoveList m) of
                            [[],[],[]] -> "l4:lastll4:datali0ei0e1:Xeeee"
-                           _ -> "adasd"
+                           [[x1,y1,v1],[x2,y2,v2],[x3,y3,v3]] -> "tie"
+                           _ -> "asd"
