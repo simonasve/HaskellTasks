@@ -73,7 +73,11 @@ parse size m =
 convert :: Int -> JsonLikeValue -> Either InvalidState To
 convert size (JLArray v) =
     case convert' (getMoves v []) [] of
-        Right res -> convertToLIL res res [] [] (size - 1)
+        Right res -> case checkForOrder res of
+                     Right True -> case convertToLIL res res [] [] (size - 1) of
+                                   Right res -> Right res
+                                   Left Duplicates -> Left Duplicates
+                     Left Order -> Left Order
         Left em -> Left em
 
 convert' :: [[JsonLikeValue]] -> [(Int, Int ,Char)] -> Either InvalidState [(Int, Int ,Char)]
@@ -114,7 +118,9 @@ convertToLIL [] [] [] [] size = Right [[],[],[]]
 convertToLIL [] mat tempAcc acc size = 
     if (size - 1) /= -2
     then convertToLIL mat mat [] (sort tempAcc:acc) (size - 1)
-    else Right acc
+    else case checkForDuplicate acc of
+         Right True -> Right acc
+         Left Duplicates -> Left Duplicates
 convertToLIL mat mat1 tempAcc acc size =
     let
         (i1,i2,c) = head mat

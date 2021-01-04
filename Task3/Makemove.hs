@@ -2,9 +2,9 @@ module Makemove where
 
 import Parser
 import ParserMessage
-import CheckIfWon
 import Data.List
 import Data.Char
+import System.Exit
 
 size' :: Int 
 size' = 3
@@ -26,8 +26,8 @@ next B = B
 empty :: Grid
 empty = replicate size' (replicate size' B)
 
-full :: Grid -> Bool 
-full = all (/=B) . concat
+full :: Grid -> Bool
+full = notElem B . concat
 
 turn :: Grid -> Player
 turn g = if xs <= os then X else O
@@ -45,7 +45,7 @@ wins p g = any line (rows ++ cols ++ dias)
                dias = [diag g, diag (map reverse g)]
 
 diag :: Grid -> [Player]
-diag g = [g !! n !! n | n <- [0..size-1]]
+diag g = [g !! n !! n | n <- [0..size'-1]]
 
 won :: Grid -> Bool 
 won g = wins X g || wins O g
@@ -53,7 +53,7 @@ won g = wins X g || wins O g
 putGrid :: Grid -> IO ()
 putGrid =
     putStrLn . unlines . concat . interleave bar . map showRow
-    where bar = [replicate ((size*4)-1) '-']
+    where bar = [replicate ((size'*4)-1) '-']
 
 showRow :: [Player] -> [String]
 showRow = beside . interleave bar . map showPlayer
@@ -72,11 +72,11 @@ interleave x [y] = [y]
 interleave x (y:ys) = y : x : interleave x ys
 
 valid :: Grid -> Int -> Bool 
-valid g i = 0 <= i && i < size^2 && concat g !! i == B
+valid g i = 0 <= i && i < size'^2 && concat g !! i == B
 
 move :: Grid -> Int -> Player -> [Grid]
 move g i p =
-    if valid g i then [chop size (xs ++ [p] ++ ys)] else []
+    [chop size' (xs ++ [p] ++ ys) | valid g i]
     where (xs,B:ys) = splitAt i (concat g)
 
 chop :: Int -> [a] -> [[a]]
@@ -102,7 +102,7 @@ moves :: Grid -> Player -> [Grid]
 moves g p
     | won g     = []
     | full g    = []
-    | otherwise = concat [move g i p | i <- [0..((size^2)-1)]]
+    | otherwise = concat [move g i p | i <- [0..((size'^2)-1)]]
 
 prune :: Int -> Tree a -> Tree a
 prune 0 (Node x _) = Node x []
@@ -126,22 +126,47 @@ bestmove g p = head [g' | Node (g',p') _ <- ts, p' == best]
                     tree = prune depth (gametree g p)
                     Node (_,best) ts = minimax tree
 
-addLetter :: String -> String
-addLetter m = m ++ "s"
-
 parseLine :: String -> JsonLikeValue
 parseLine m =
-    case parse 3 m of
+    case parse size' m of
     Right res -> res
 
 getMoveList :: String -> To
-getMoveList m = case convert 3 (parseLine m) of
-                Right res -> res
+getMoveList m =
+    case convert size' (parseLine m) of
+    Right res -> res
 
-makeMoveLogic :: String -> String
-makeMoveLogic m = case checkIfWon(getMoveList m) of
-                  True -> "won"
-                  False -> case (getMoveList m) of
-                           [[],[],[]] -> "l4:lastll4:datali0ei0e1:Xeeee"
-                           [[x1,y1,v1],[x2,y2,v2],[x3,y3,v3]] -> "tie"
-                           _ -> "asd"
+convertToGrid :: To -> Int -> Grid -> Grid
+convertToGrid [] row g = g
+convertToGrid l row g = 
+            let
+                res = convertToGrid' (head l) []  row
+                res' = tranferToGrid res g
+            in
+                convertToGrid (drop 1 l) (row - 1) res'
+
+convertToGrid' :: [(Int, Char)] -> [(Int, Char)] -> Int -> [(Int,Char)]
+convertToGrid' xs acc row = foldr (\x -> (:) (convertToIndex x row)) acc xs
+
+convertToIndex :: (Int, Char) -> Int -> (Int, Char)
+convertToIndex (x,c) row
+                | row == 0 = (x,c)
+                | row == 1 = (x+3, c)
+                | row == 2 = (x+6, c)
+
+tranferToGrid :: [(Int, Char)] -> Grid -> Grid
+tranferToGrid [] g = g
+tranferToGrid l g =
+    let
+        (i,c) = head l
+    in       
+        if c == 'X'
+        then case move g i X of
+             [] -> tranferToGrid (drop 1 l) g
+             [g'] -> tranferToGrid (drop 1 l) g'
+        else case move g i O of
+             [] -> tranferToGrid (drop 1 l) g
+             [g'] -> tranferToGrid (drop 1 l) g'
+
+makeBestMove :: String -> Player -> Grid
+makeBestMove m = bestmove (convertToGrid (getMoveList m) 2 empty)
