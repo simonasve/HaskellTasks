@@ -35,22 +35,17 @@ main = do
         if wins (convertToPlayer args) grid'
           then do
                 putStrLn (concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eee4:prev",m,"e"])
-                hPutStrLn stderr stdrMessage
+                hPutStrLn stderr (stdrMessage ++ ".I win")
                 exitWith (ExitFailure 10)
-          else if full grid
+          else if full grid'
                 then do 
                       putStrLn (concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eee4:prev",m,"e"])
-                      hPutStrLn stderr stdrMessage
+                      hPutStrLn stderr (stdrMessage ++ ". A draw")
                       exitWith (ExitFailure 12)
                 else if m /= "*"
                   then do
                         putStrLn (concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eee4:prev",m,"e"])
                         hPutStrLn stderr stdrMessage
-                        exitWith (ExitFailure 0)
                   else do
                         putStrLn (concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eeee"])
                         hPutStrLn stderr stdrMessage
-                        exitWith (ExitFailure 0)
-
-
-      

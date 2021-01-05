@@ -50,27 +50,6 @@ diag g = [g !! n !! n | n <- [0..size'-1]]
 won :: Grid -> Bool 
 won g = wins X g || wins O g
 
-putGrid :: Grid -> IO ()
-putGrid =
-    putStrLn . unlines . concat . interleave bar . map showRow
-    where bar = [replicate ((size'*4)-1) '-']
-
-showRow :: [Player] -> [String]
-showRow = beside . interleave bar . map showPlayer
-          where
-          beside = foldr1 (zipWith (++))
-          bar = replicate 3 "|"
-
-showPlayer :: Player -> [String]
-showPlayer O = [" ", " O ", " "]
-showPlayer B = [" ", " ", " "]
-showPlayer X = [" ", " X ", " "]
-
-interleave :: a -> [a] -> [a]
-interleave x [] = []
-interleave x [y] = [y]
-interleave x (y:ys) = y : x : interleave x ys
-
 valid :: Grid -> Int -> Bool 
 valid g i = 0 <= i && i < size'^2 && concat g !! i == B
 
@@ -91,18 +70,6 @@ convertToPlayer :: [String] -> Player
 convertToPlayer args
               | head (head args) == 'X' = X
               | otherwise = O
-
-getNat :: String -> IO Int
-getNat prompt = do putStr prompt
-                   xs <- getLine
-                   if xs /= [] && all isDigit xs then
-                    return (read xs)
-                   else
-                    do putStrLn "ERROR: Invalid number"
-                       getNat prompt
-
-prompt :: Player -> String
-prompt p = "Player " ++ show p ++ ", enter your move: "
 
 gametree :: Grid -> Player -> Tree Grid
 gametree g p = Node g [gametree g' (next p) | g' <- moves g p]
