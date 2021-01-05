@@ -1,7 +1,7 @@
 module Parser where
 
 import ParserMessage
-import Data.List as L ( concat, takeWhile, sort, reverse ) 
+import Data.List as L
 import Data.Char as C
 
 parseJLInt :: String -> Either (String, Int) (JsonLikeValue, String, Int)

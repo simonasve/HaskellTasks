@@ -121,6 +121,7 @@ minimax (Node g ts)
                         ps = [p | Node (_, p) _ <- ts']
 
 bestmove :: Grid -> Player -> Grid
+bestmove [[B,B,B],[B,B,B],[B,B,B]] X = [[X,B,B],[B,B,B],[B,B,B]]
 bestmove g p = head [g' | Node (g',p') _ <- ts, p' == best]
                 where
                     tree = prune depth (gametree g p)
@@ -169,4 +170,40 @@ tranferToGrid l g =
              [g'] -> tranferToGrid (drop 1 l) g'
 
 makeBestMove :: String -> Player -> Grid
-makeBestMove m = bestmove (convertToGrid (getMoveList m) 2 empty)
+makeBestMove m = bestmove (convertToGrid (getMoveList m) (size' - 1) empty)
+
+convert2Message :: String -> Player -> String
+convert2Message m p =
+            let
+                g = concat (convertToGrid (getMoveList m) (size' - 1) empty)
+                g' = concat (makeBestMove m p)
+                index = compareGrids g g' 8
+                (x,y) = getCoordinates index
+                c = if p == X then 'X' else 'O'
+            in
+                if m == "*"
+                then concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eeee"]
+                else concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eee4:prev",m,"e"]
+
+compareGrids :: [Player] -> [Player] -> Int -> Int
+compareGrids [] [] count = -1
+compareGrids g g' count =
+            let
+                h1 = head g
+                h2 = head g'
+            in
+                if h1 /= h2
+                then count
+                else compareGrids (drop 1 g) (drop 1 g') (count - 1)
+
+getCoordinates :: Int -> (Int, Int)
+getCoordinates i 
+            | i == 0 = (2, 0)
+            | i == 1 = (1, 0)
+            | i == 2 = (0, 0)
+            | i == 3 = (2, 1)
+            | i == 4 = (1, 1)
+            | i == 5 = (0, 1)
+            | i == 6 = (2, 2)
+            | i == 7 = (1, 2)
+            | i == 8 = (0, 2)

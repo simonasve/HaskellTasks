@@ -1,10 +1,16 @@
 module Main where
 import Makemove
 import System.IO
+import System.Exit
+import System.Environment
 
 main :: IO ()
-main = do hSetBuffering stdout NoBuffering
-          play empty X
+main = getArgs >>= (\args -> getLine >>= (\m -> putStrLn (convert2Message m (convertToPlayer args))))
+
+convertToPlayer :: [String] -> Player
+convertToPlayer args
+              | head (head args) == 'X' = X
+              | otherwise = O
 
 play :: Grid -> Player -> IO ()
 play g p = do putGrid g
