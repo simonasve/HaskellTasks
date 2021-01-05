@@ -83,6 +83,15 @@ chop :: Int -> [a] -> [[a]]
 chop n [] = []
 chop n xs = take n xs : chop n (drop n xs)
 
+removeRight :: Either a b -> b
+removeRight eith = case eith of
+                 Right res -> res
+
+convertToPlayer :: [String] -> Player
+convertToPlayer args
+              | head (head args) == 'X' = X
+              | otherwise = O
+
 getNat :: String -> IO Int
 getNat prompt = do putStr prompt
                    xs <- getLine
@@ -127,15 +136,17 @@ bestmove g p = head [g' | Node (g',p') _ <- ts, p' == best]
                     tree = prune depth (gametree g p)
                     Node (_,best) ts = minimax tree
 
-parseLine :: String -> JsonLikeValue
+parseLine :: String -> Either String JsonLikeValue
 parseLine m =
     case parse size' m of
-    Right res -> res
+    Right res -> Right res
+    Left em -> Left em
 
-getMoveList :: String -> To
-getMoveList m =
-    case convert size' (parseLine m) of
-    Right res -> res
+getMoveList :: JsonLikeValue  -> Either InvalidState To
+getMoveList jsl =
+    case convert size' jsl of
+    Right res -> Right res
+    Left em -> Left em
 
 convertToGrid :: To -> Int -> Grid -> Grid
 convertToGrid [] row g = g
@@ -169,22 +180,6 @@ tranferToGrid l g =
              [] -> tranferToGrid (drop 1 l) g
              [g'] -> tranferToGrid (drop 1 l) g'
 
-makeBestMove :: String -> Player -> Grid
-makeBestMove m = bestmove (convertToGrid (getMoveList m) (size' - 1) empty)
-
-convert2Message :: String -> Player -> String
-convert2Message m p =
-            let
-                g = concat (convertToGrid (getMoveList m) (size' - 1) empty)
-                g' = concat (makeBestMove m p)
-                index = compareGrids g g' 8
-                (x,y) = getCoordinates index
-                c = if p == X then 'X' else 'O'
-            in
-                if m == "*"
-                then concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eeee"]
-                else concat ["l4:lastll4:datali",[intToDigit x],"ei",[intToDigit y],"e1:",[c],"eee4:prev",m,"e"]
-
 compareGrids :: [Player] -> [Player] -> Int -> Int
 compareGrids [] [] count = -1
 compareGrids g g' count =
@@ -207,3 +202,14 @@ getCoordinates i
             | i == 6 = (2, 2)
             | i == 7 = (1, 2)
             | i == 8 = (0, 2)
+
+getGameState :: To -> String -> Int -> String
+getGameState [] ms row = ms
+getGameState (l:ls) ms row = getGameState' l ms row ++ getGameState ls ms (row + 1)
+
+getGameState' :: [(Int, Char)] -> String -> Int -> String
+getGameState' [] ms row = ms
+getGameState' ((i,c):xs) ms row
+            | row == 0 = getGameState' xs (concat [ms, "(", [intToDigit i],",", [intToDigit 0],",",[c],") "]) row
+            | row == 1 = getGameState' xs (concat [ms, "(", [intToDigit i],",", [intToDigit 1],",",[c],") "]) row
+            | row == 2 = getGameState' xs (concat [ms, "(", [intToDigit i],",", [intToDigit 2],",",[c],") "]) row
