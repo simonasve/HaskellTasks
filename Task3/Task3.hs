@@ -4,6 +4,7 @@ import System.IO
 import System.Exit
 import System.Environment
 import Data.Char
+import Control.Monad ( when )
 
 main :: IO () 
 main = do
@@ -22,11 +23,9 @@ main = do
                       exitWith (ExitFailure 101)
           Right _ -> return ()
         let grid = convertToGrid (removeRight moveList) (size' - 1) empty
-        if full grid || won grid
-          then do
-                putStrLn "I cannot perform any moves because game is already ended"
-                exitWith (ExitFailure 20)
-          else return ()
+        Control.Monad.when (full grid || won grid) $ do 
+          putStrLn "I cannot perform any moves because game is already ended"
+          exitWith (ExitFailure 20)
         let grid' = bestmove grid (convertToPlayer args)
         let index = compareGrids (concat grid) (concat grid') 8
         let (x,y) = getCoordinates index
